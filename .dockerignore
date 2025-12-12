@@ -1,0 +1,36 @@
+# Git
+.git/
+.gitignore
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.test
+*.out
+
+# Documentation
+*.md
+docs/swagger.json
+docs/swagger.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+tmp/
+*.log
+
+# Development
+.env.local
+.env.development
+
+# Test files
+*_test.go

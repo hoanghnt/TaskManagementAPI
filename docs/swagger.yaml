@@ -1,0 +1,971 @@
+basePath: /api/v1
+definitions:
+  models.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  models.BulkUpdateStatusRequest:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        enum:
+        - pending
+        - in_progress
+        - completed
+      task_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - status
+    - task_ids
+    type: object
+  models.Category:
+    properties:
+      color:
+        type: string
+      completed_count:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      pending_count:
+        type: integer
+      task_count:
+        description: Computed fields (not stored in DB)
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.CategoryTaskCount:
+    properties:
+      category_id:
+        type: integer
+      category_name:
+        type: string
+      task_count:
+        type: integer
+    type: object
+  models.CreateCategoryRequest:
+    properties:
+      color:
+        description: '#RRGGBB format'
+        type: string
+      description:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 100
+        type: string
+    required:
+    - name
+    type: object
+  models.CreateTaskRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      due_date:
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.TaskPriority'
+        enum:
+        - low
+        - medium
+        - high
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        enum:
+        - pending
+        - in_progress
+        - completed
+      title:
+        maxLength: 200
+        type: string
+    required:
+    - title
+    type: object
+  models.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    - username
+    type: object
+  models.Task:
+    properties:
+      category:
+        $ref: '#/definitions/models.Category'
+      category_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      due_date:
+        type: string
+      id:
+        type: integer
+      priority:
+        $ref: '#/definitions/models.TaskPriority'
+      status:
+        $ref: '#/definitions/models.TaskStatus'
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.TaskPriority:
+    enum:
+    - low
+    - medium
+    - high
+    type: string
+    x-enum-varnames:
+    - TaskPriorityLow
+    - TaskPriorityMedium
+    - TaskPriorityHigh
+  models.TaskStats:
+    properties:
+      by_category:
+        items:
+          $ref: '#/definitions/models.CategoryTaskCount'
+        type: array
+      by_priority:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+      by_status:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+      completion_rate:
+        type: number
+      overdue_tasks:
+        type: integer
+      total_tasks:
+        type: integer
+    type: object
+  models.TaskStatus:
+    enum:
+    - pending
+    - in_progress
+    - completed
+    type: string
+    x-enum-varnames:
+    - TaskStatusPending
+    - TaskStatusInProgress
+    - TaskStatusCompleted
+  models.UpdateCategoryRequest:
+    properties:
+      color:
+        type: string
+      description:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 100
+        type: string
+    type: object
+  models.UpdateTaskRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      due_date:
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.TaskPriority'
+        enum:
+        - low
+        - medium
+        - high
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        enum:
+        - pending
+        - in_progress
+        - completed
+      title:
+        maxLength: 200
+        type: string
+    type: object
+  models.UpdateTaskStatusRequest:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        enum:
+        - pending
+        - in_progress
+        - completed
+    required:
+    - status
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@taskmanagement.com
+    name: API Support
+  description: RESTful API for managing tasks and categories
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Task Management API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login user
+      tags:
+      - Authentication
+  /auth/me:
+    get:
+      description: Get authenticated user information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - Authentication
+  /categories:
+    get:
+      description: Get all categories for the authenticated user with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all categories
+      tags:
+      - Categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new category for the authenticated user
+      parameters:
+      - description: Category details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Category'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new category
+      tags:
+      - Categories
+  /categories/{id}:
+    delete:
+      description: Delete a category (soft delete)
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete category
+      tags:
+      - Categories
+    get:
+      description: Get a specific category by ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Category'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get category by ID
+      tags:
+      - Categories
+    put:
+      consumes:
+      - application/json
+      description: Update an existing category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Category update details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Category'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update category
+      tags:
+      - Categories
+  /stats/dashboard:
+    get:
+      description: Get comprehensive task statistics for dashboard
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TaskStats'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get dashboard statistics
+      tags:
+      - Statistics
+  /stats/overdue:
+    get:
+      description: Get tasks that are past their due date
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Task'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get overdue tasks
+      tags:
+      - Statistics
+  /stats/upcoming:
+    get:
+      description: Get tasks due in the next N days
+      parameters:
+      - description: 'Number of days (default: 7)'
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Task'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get upcoming tasks
+      tags:
+      - Statistics
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get all tasks for the authenticated user with filtering, sorting,
+        and pagination
+      parameters:
+      - description: Filter by status (pending, in_progress, completed)
+        in: query
+        name: status
+        type: string
+      - description: Filter by priority (low, medium, high)
+        in: query
+        name: priority
+        type: string
+      - description: Filter by category ID
+        in: query
+        name: category_id
+        type: integer
+      - description: Search in title and description
+        in: query
+        name: search
+        type: string
+      - default: created_at
+        description: Sort by field (created_at, updated_at, due_date, priority)
+        in: query
+        name: sort_by
+        type: string
+      - default: desc
+        description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size (max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tasks retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all tasks
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task for the authenticated user
+      parameters:
+      - description: Task creation data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Task created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new task
+      tags:
+      - tasks
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft delete a task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid task ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Task not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete task
+      tags:
+      - tasks
+    get:
+      consumes:
+      - application/json
+      description: Get a specific task by ID for the authenticated user
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid task ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Task not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get task by ID
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update an existing task (partial update)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task update data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Task not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update task
+      tags:
+      - tasks
+  /tasks/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update only the status of a task (quick status change)
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status update data
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateTaskStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task status updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Task not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update task status
+      tags:
+      - tasks
+  /tasks/bulk/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update status for multiple tasks at once
+      parameters:
+      - description: Bulk status update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.BulkUpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bulk update completed
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Bulk update task status
+      tags:
+      - tasks
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
